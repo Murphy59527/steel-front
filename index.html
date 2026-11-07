@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#060d0a">
+  <meta name="description" content="钢铁前线：一款使用原生 HTML5 Canvas 制作的复古像素坦克大战。守住基地，击退敌军。">
+  <title>钢铁前线 · 坦克大战</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23070f0b'/%3E%3Cpath d='M17 20h30v7H17zm-5 11h40v22H12z' fill='%237dffbc'/%3E%3Cpath d='M29 11h6v14h-6z' fill='%23ffd166'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
+
+  <div class="app">
+    <header class="masthead">
+      <a class="brand" href="./" aria-label="钢铁前线首页">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" role="presentation">
+            <path d="M9 16h30v7H9z" fill="currentColor" opacity=".95"/>
+            <path d="M6 26h36v13H6z" fill="currentColor"/>
+            <path d="M21 7h6v13h-6z" fill="#ffd166"/>
+            <path d="M14 30h20v5H14z" fill="#07100c" opacity=".6"/>
+            <path d="M12 41h6v3h-6zm9 0h6v3h-6zm9 0h6v3h-6z" fill="currentColor" opacity=".55"/>
+          </svg>
+        </span>
+        <span class="brand-copy">
+          <span class="brand-kicker">ARCADE COMBAT SYSTEM</span>
+          <span class="brand-title">钢铁前线 <em>/ STEEL FRONT</em></span>
+        </span>
+      </a>
+
+      <div class="masthead-actions">
+        <span class="system-state"><i aria-hidden="true"></i> 系统在线</span>
+        <button class="icon-btn" id="soundBtn" type="button" aria-label="切换音效" aria-pressed="false">
+          <svg class="icon icon-sound-on" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+            <path d="M16 8.5a5 5 0 0 1 0 7M18.8 6a9 9 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <svg class="icon icon-sound-off" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4z" fill="currentColor"/>
+            <path d="m16 9 5 6m0-6-5 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+          <span class="icon-label" id="soundLabel">音效 开</span>
+        </button>
+        <button class="icon-btn" id="pauseBtn" type="button" aria-label="暂停游戏">
+          <svg class="icon icon-pause" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 5h3.5v14H7zm6.5 0H17v14h-3.5z" fill="currentColor"/>
+          </svg>
+          <svg class="icon icon-play" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5.2v13.6L18.5 12 8 5.2z" fill="currentColor"/>
+          </svg>
+          <span class="icon-label" id="pauseLabel">暂停</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="game-layout">
+      <section class="stage-column" aria-label="游戏区域">
+        <div class="mobile-hud" aria-hidden="true">
+          <div><span>得分</span><strong id="mobileScore">000000</strong></div>
+          <div><span>生命</span><strong id="mobileLives">×3</strong></div>
+          <div><span>敌军</span><strong id="mobileEnemies">09</strong></div>
+        </div>
+
+        <div class="stage-frame">
+          <div class="stage-meta">
+            <span class="stage-meta-left"><span class="live-dot" aria-hidden="true"></span> SECTOR <b id="metaSector">01</b> <span class="meta-divider">/</span> <span id="metaMission">青苔防线</span></span>
+            <span class="stage-meta-right">LIVE FEED <span id="metaClock">00:00</span></span>
+          </div>
+
+          <div class="screen" id="screen">
+            <canvas id="gameCanvas" width="1440" height="1440" role="img" aria-label="坦克大战游戏画面">
+              你的浏览器需要支持 HTML5 Canvas 才能运行游戏。
+            </canvas>
+            <div class="screen-vignette" aria-hidden="true"></div>
+            <div class="scanlines" aria-hidden="true"></div>
+            <div class="screen-grain" aria-hidden="true"></div>
+            <div class="stage-banner" id="stageBanner" aria-hidden="true">
+              <span class="banner-kicker">INCOMING TRANSMISSION</span>
+              <strong id="bannerTitle">STAGE 01</strong>
+              <small id="bannerSub">青苔防线</small>
+            </div>
+            <div class="overlay is-visible" id="overlay" aria-live="polite"></div>
+            <div class="toast" id="toast" role="status" aria-live="polite"></div>
+            <div class="corner corner-tl" aria-hidden="true"></div>
+            <div class="corner corner-tr" aria-hidden="true"></div>
+            <div class="corner corner-bl" aria-hidden="true"></div>
+            <div class="corner corner-br" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="controls-strip">
+          <div class="control-hints">
+            <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> <em>或</em> <kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd> 移动</span>
+            <span><kbd class="wide">SPACE</kbd> 开火</span>
+            <span><kbd>P</kbd> 暂停</span>
+            <span><kbd>M</kbd> 静音</span>
+          </div>
+          <span class="controls-tag">HTML5 / CANVAS</span>
+        </div>
+
+        <div class="touch-controls" aria-label="触屏控制">
+          <div class="dpad">
+            <button class="pad-btn pad-up" type="button" data-control="up" aria-label="向上移动">▲</button>
+            <button class="pad-btn pad-left" type="button" data-control="left" aria-label="向左移动">◀</button>
+            <span class="pad-core" aria-hidden="true"></span>
+            <button class="pad-btn pad-right" type="button" data-control="right" aria-label="向右移动">▶</button>
+            <button class="pad-btn pad-down" type="button" data-control="down" aria-label="向下移动">▼</button>
+          </div>
+          <div class="touch-fire-wrap">
+            <span>按住连射</span>
+            <button class="fire-btn" type="button" data-control="fire" aria-label="开火">
+              <span class="fire-ring" aria-hidden="true"></span>
+              <strong>FIRE</strong>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side-panel" aria-label="战术信息面板">
+        <div class="panel-head">
+          <span class="panel-title">战术终端</span>
+          <span class="panel-code">TAC-01</span>
+        </div>
+
+        <div class="mission-card">
+          <span class="eyebrow">ACTIVE MISSION</span>
+          <strong class="mission-name" id="missionName">青苔防线</strong>
+          <p class="mission-desc" id="missionDesc">保持阵线，摧毁所有入侵单位，保护南侧指挥核心。</p>
+        </div>
+
+        <div class="score-card">
+          <span class="eyebrow">战斗积分 / SCORE</span>
+          <strong class="score-value" id="scoreValue">000000</strong>
+          <div class="high-line">
+            <span>历史最高</span>
+            <span class="high-value" id="highScoreValue">000000</span>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div class="stat-block">
+            <span class="stat-label">装甲单位</span>
+            <div class="life-icons" id="lifeIcons" aria-label="剩余生命 3"></div>
+          </div>
+          <div class="stat-block align-right">
+            <span class="stat-label">基地状态</span>
+            <strong class="base-status is-ok" id="baseStatus"><i aria-hidden="true"></i> 安全</strong>
+          </div>
+        </div>
+
+        <div class="enemy-card">
+          <div class="enemy-card-head">
+            <span class="eyebrow">敌军信号 / HOSTILES</span>
+            <strong><span id="enemyCount">09</span><small> / <span id="enemyTotal">09</span></small></strong>
+          </div>
+          <div class="enemy-pips" id="enemyPips" aria-hidden="true"></div>
+          <div class="threat-line"><span>威胁等级</span><span id="threatLevel" class="threat level-low">低</span></div>
+        </div>
+
+        <div class="radar-card">
+          <div class="radar-card-head">
+            <span class="eyebrow">战术雷达 / RADAR</span>
+            <span class="radar-live"><i aria-hidden="true"></i> LIVE</span>
+          </div>
+          <div class="radar-body">
+            <div class="radar-screen">
+              <canvas id="radarCanvas" width="260" height="260" aria-hidden="true"></canvas>
+              <span class="radar-crosshair" aria-hidden="true"></span>
+            </div>
+            <div class="radar-readout">
+              <div><span>敌军</span><strong id="radarEnemies">09</strong></div>
+              <div><span>核心</span><strong id="radarCore" class="is-online">在线</strong></div>
+              <div class="radar-sweep"><span></span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="buff-card" id="buffCard">
+          <span class="eyebrow">战场增益 / BOOSTS</span>
+          <div class="buff-list" id="buffList">
+            <span class="buff-empty">暂无增益</span>
+          </div>
+        </div>
+
+        <div class="help-card">
+          <span class="eyebrow">战术提示</span>
+          <p>砖墙可以击碎，钢板不可穿透。拾取空投补给可获得护盾、速射与火力支援。</p>
+        </div>
+
+        <div class="panel-foot">
+          <span>MISSION READY</span>
+          <span>BUILD 1.0.0</span>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="page-footer">
+      <span>STEEL FRONT © 2026</span>
+      <span class="footer-rule" aria-hidden="true"></span>
+      <span>守住底线，然后反攻。</span>
+    </footer>
+  </div>
+
+  <noscript>
+    <div class="noscript">请启用 JavaScript 以运行《钢铁前线》。</div>
+  </noscript>
+
+  <script src="game.js"></script>
+</body>
+</html>
